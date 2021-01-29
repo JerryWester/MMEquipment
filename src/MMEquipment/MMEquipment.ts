@@ -222,17 +222,15 @@ class MMEquipment implements IPlugin {
 
         if (this.windowOpen[0]) {
             if (this.ModLoader.ImGui.begin("Majora's Mask Equipment Config", this.windowOpen)) {
-                
                 if (this.ModLoader.ImGui.button("Remove Equipment")) {
                     this.clearEquipment();
                 }
-                
 
                 if (this.ModLoader.ImGui.treeNode("Adult###MMEquipAdult")) {
                     this.categoryArraysAdult.forEach((paks: EquipmentPakExtended[], category: Category) => {
                         if (this.ModLoader.ImGui.treeNode(category + "###MMEquipmentCatsAdult" + category)) {
                             for (let i: number = 0; i < paks.length; i++) {
-                                if (this.ModLoader.ImGui.menuItem(paks[i].name + "###" + paks[i].age.toString() + paks[i].name + category, 
+                                if (this.ModLoader.ImGui.menuItem(paks[i].name, 
                                     undefined, this.checkboxesAdult.get(paks[i]))) {
                                     if (this.isAdult) {
                                         this.fixPakEnvColor(paks[i]);
@@ -255,7 +253,7 @@ class MMEquipment implements IPlugin {
                     this.categoryArraysChild.forEach((paks: EquipmentPakExtended[], category: Category) => {
                         if (this.ModLoader.ImGui.treeNode(category + "###MMEquipmentCatsChild" + category)) {
                             for (let i: number = 0; i < paks.length; i++) {
-                                if (this.ModLoader.ImGui.menuItem(paks[i].name + "###" + paks[i].age.toString() + paks[i].name + category, 
+                                if (this.ModLoader.ImGui.menuItem(paks[i].name, 
                                     undefined, this.checkboxesChild.get(paks[i]))) {
                                     if (!this.isAdult) {
                                         this.fixPakEnvColor(paks[i]);
@@ -308,7 +306,7 @@ class MMEquipment implements IPlugin {
 
         EquipmentHelper.setEquipmentCategory(buf, category);
 
-        let pak: EquipmentPakExtended = new EquipmentPakExtended(name, buf, indeces, category, age);
+        let pak: EquipmentPakExtended = new EquipmentPakExtended(name + "###" + age.toString() + name + category, buf, indeces, category, age);
 
         if (age === Age.ADULT) {
             this.categoryArraysAdult.get(category)?.push(pak);

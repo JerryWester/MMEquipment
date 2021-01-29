@@ -15,10 +15,12 @@ const enum Manifest {
     BIGGORON_SWORD = "biggoron_sword.bin",
     HYLIAN_SHIELD_CHILD = "hylian_shield_child.bin",
     HYLIAN_SHIELD_ADULT = "hylian_shield_adult.bin",
+    HYLIAN_SHIELD_ADULT_RESCALED = "hylian_shield_adult_rescaled.bin",
     BOTTLE_CHILD = "bottle_child.bin",
     BOTTLE_ADULT = "bottle_adult.bin",
     DEKU_SHIELD = "deku_shield.bin",
     MIRROR_SHIELD = "mirror_shield.bin",
+    MIRROR_SHIELD_RESCALED = "mirror_shield_rescaled.bin",
     DEKU_STICK = "deku_stick.bin",
     BOW = "bow.bin",
     SLINGSHOT = "slingshot.bin",
@@ -127,11 +129,15 @@ class MMEquipment implements IPlugin {
         this.zobjToEquipPak("hero_shield.zobj", Manifest.HYLIAN_SHIELD_CHILD, "Hero's Shield", Category.HYLIAN_SHIELD, Age.CHILD);
         this.zobjToEquipPak("mirror_shield_mm.zobj", Manifest.HYLIAN_SHIELD_CHILD, "Mirror Shield", Category.HYLIAN_SHIELD, Age.CHILD);
         this.zobjToEquipPak("hero_shield.zobj", Manifest.HYLIAN_SHIELD_ADULT, "Hero's Shield", Category.HYLIAN_SHIELD, Age.ADULT);
+        this.zobjToEquipPak("hero_shield.zobj", Manifest.HYLIAN_SHIELD_ADULT_RESCALED, "Hero's Shield (Adult)", Category.HYLIAN_SHIELD, Age.ADULT);
         this.zobjToEquipPak("mirror_shield_mm.zobj", Manifest.HYLIAN_SHIELD_ADULT, "Mirror Shield", Category.HYLIAN_SHIELD, Age.ADULT);
+        this.zobjToEquipPak("mirror_shield_mm.zobj", Manifest.HYLIAN_SHIELD_ADULT_RESCALED, "Mirror Shield (Adult)", Category.HYLIAN_SHIELD, Age.ADULT);
 
         /* Mirror Shield */
         this.zobjToEquipPak("hero_shield.zobj", Manifest.MIRROR_SHIELD, "Hero's Shield", Category.MIRROR_SHIELD, Age.ADULT);
+        this.zobjToEquipPak("hero_shield.zobj", Manifest.MIRROR_SHIELD_RESCALED, "Hero's Shield (Adult)", Category.MIRROR_SHIELD, Age.ADULT);
         this.zobjToEquipPak("mirror_shield_mm.zobj", Manifest.MIRROR_SHIELD, "Mirror Shield", Category.MIRROR_SHIELD, Age.ADULT);
+        this.zobjToEquipPak("mirror_shield_mm.zobj", Manifest.MIRROR_SHIELD_RESCALED, "Mirror Shield (Adult)", Category.MIRROR_SHIELD, Age.ADULT);
 
         /* Bottle */
         this.zobjToEquipPak("bottle_mm.zobj", Manifest.BOTTLE_CHILD, "Bottle", Category.C_ITEMS, Age.CHILD);

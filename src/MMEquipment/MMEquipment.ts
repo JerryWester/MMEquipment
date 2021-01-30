@@ -6,7 +6,6 @@ import { Z64OnlineEvents, Z64Online_EquipmentPak } from './Z64API/OotoAPI';
 import { onViUpdate } from 'modloader64_api/PluginLifecycle';
 import path from 'path';
 import { readFileSync, writeJSONSync, readJSONSync, writeFileSync } from 'fs-extra';
-import { IImGui } from 'modloader64_api/Sylvain/ImGui';
 import { EquipmentHelper } from './EquipmentHelper';
 
 const enum Manifest {
@@ -81,6 +80,8 @@ class MMEquipment implements IPlugin {
 
     isAdult!: boolean;
 
+    shouldUpdateOnAgeChange: boolean = false;
+
     /* prototype stuff; REMOVE ME */
     currentlyEquippedAdult: EquipmentPakExtended[] = new Array();
     currentlyEquippedChild: EquipmentPakExtended[] = new Array();
@@ -95,6 +96,7 @@ class MMEquipment implements IPlugin {
 
     preinit(): void {
     }
+
     init(): void {
         this.categoryArraysAdult.set(Category.MASTER_SWORD, new Array<EquipmentPakExtended>());
         this.categoryArraysAdult.set(Category.BIGGORON_SWORD, new Array<EquipmentPakExtended>());
@@ -165,25 +167,31 @@ class MMEquipment implements IPlugin {
         let addr: number = 0x000f7ad8 + this.core.link.tunic * 3;
         let currColor: number = (this.ModLoader.emulator.rdramRead16(addr) << 8) | (this.ModLoader.emulator.rdramRead8(addr + 2));
 
-        if (this.storedTunicColor != currColor) {
+        if (this.storedTunicColor !== currColor) {
             this.storedTunicColor = currColor;
             this.updateEnvColor();
             this.tunicNeedsFix = true;
 
+            let currentEquipped: EquipmentPakExtended[];
+
             if (this.isAdult) {
-                this.currentlyEquippedAdult.forEach(pak => {
-                    this.fixPakEnvColor(pak);
-                    bus.emit(Z64OnlineEvents.LOAD_EQUIPMENT_BUFFER, new Z64Online_EquipmentPak(pak.name, pak.data));
-                });
+                currentEquipped = this.currentlyEquippedAdult;
             } else {
-                this.currentlyEquippedChild.forEach(pak => {
-                    this.fixPakEnvColor(pak);
-                    bus.emit(Z64OnlineEvents.LOAD_EQUIPMENT_BUFFER, new Z64Online_EquipmentPak(pak.name, pak.data));
-                });
+                currentEquipped = this.currentlyEquippedChild;
             }
 
-            bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT);
+            currentEquipped.forEach(pak => {
+                this.fixPakEnvColor(pak);
+                this.ModLoader.utils.setTimeoutFrames(() => {
+                    bus.emit(Z64OnlineEvents.LOAD_EQUIPMENT_BUFFER, new Z64Online_EquipmentPak(pak.name, pak.data));
+                }, 1)
+            });
 
+            this.ModLoader.utils.setTimeoutFrames(() => {
+                bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT);
+            }, 1);
+
+            this.shouldUpdateOnAgeChange = true;
         }
     }
 
@@ -199,6 +207,26 @@ class MMEquipment implements IPlugin {
     @EventHandler(OotEvents.ON_AGE_CHANGE)
     onAgeChange(age: Age) {
         this.isAdult = (age === Age.ADULT);
+
+        if(this.shouldUpdateOnAgeChange) {
+            let currentEquip: EquipmentPakExtended[];
+
+            if(this.isAdult) {
+                currentEquip = this.currentlyEquippedAdult;
+            } else currentEquip = this.currentlyEquippedChild;
+
+            this.updateEnvColor();
+
+            currentEquip.forEach(pak => {
+                this.fixPakEnvColor(pak);
+            });
+
+            this.ModLoader.utils.setTimeoutFrames(() => {
+                bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {})
+            }, 20);
+
+            this.shouldUpdateOnAgeChange = false;
+        }
     }
 
     updateEnvColor(): void {
@@ -277,15 +305,16 @@ class MMEquipment implements IPlugin {
                     });
                     this.ModLoader.ImGui.treePop();
                 }
-
                 this.ModLoader.ImGui.end();
             }
         }
     }
 
     clearEquipment(): void {
-        bus.emit(Z64OnlineEvents.CLEAR_EQUIPMENT, {});
-        bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {});
+        this.ModLoader.utils.setTimeoutFrames(() => {
+            bus.emit(Z64OnlineEvents.CLEAR_EQUIPMENT, {});
+            bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {});
+        }, 1)
     }
 
     @EventHandler(Z64OnlineEvents.CLEAR_EQUIPMENT)

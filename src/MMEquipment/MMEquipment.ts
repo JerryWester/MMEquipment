@@ -223,7 +223,7 @@ class MMEquipment implements IPlugin {
 
             this.ModLoader.utils.setTimeoutFrames(() => {
                 bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {})
-            }, 20);
+            }, 1);
 
             this.shouldUpdateOnAgeChange = false;
         }
@@ -324,11 +324,12 @@ class MMEquipment implements IPlugin {
                 this.checkboxesAdult.set(key, false);
                 this.currentlyEquippedAdult.length = 0;
             });
+            this.currentlyEquippedAdult.length = 0;
         } else {
             this.checkboxesChild.forEach((val: boolean, key: EquipmentPakExtended) => {
                 this.checkboxesChild.set(key, false);
-                this.currentlyEquippedChild.length = 0;
             });
+            this.currentlyEquippedChild.length = 0;
         }
     }
 

@@ -1,5 +1,5 @@
 import { IPlugin, IModLoaderAPI, ModLoaderEvents } from 'modloader64_api/IModLoaderAPI';
-import { Heap } from 'modloader64_api/heap';
+// import { Heap } from 'modloader64_api/heap';
 import { bus, EventHandler } from 'modloader64_api/EventHandler';
 import { IOOTCore, OotEvents, Age } from 'modloader64_api/OOT/OOTAPI';
 import { InjectCore } from 'modloader64_api/CoreInjection';
@@ -14,8 +14,8 @@ const configFileName: string = "./mm_equipment_paks.json";
 interface IEquipment_Config {
     adult_equipment: string[],
     child_equipment: string[],
-    replace_gi_models: boolean,
-    replace_textures: boolean
+    // replace_gi_models: boolean,
+    // replace_textures: boolean
 }
 
 const enum Manifest {
@@ -316,8 +316,8 @@ class MMEquipment implements IPlugin {
                 let cfg: IEquipment_Config = {
                     adult_equipment: new Array(),
                     child_equipment: new Array(),
-                    replace_gi_models: false,
-                    replace_textures: false
+                    // replace_gi_models: false,
+                    // replace_textures: false
                 }
 
                 this.currentlyEquippedAdult.forEach((element: EquipmentPakExtended) => {

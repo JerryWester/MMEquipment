@@ -1,12 +1,22 @@
 import { IPlugin, IModLoaderAPI, ModLoaderEvents } from 'modloader64_api/IModLoaderAPI';
+import { Heap } from 'modloader64_api/heap';
 import { bus, EventHandler } from 'modloader64_api/EventHandler';
 import { IOOTCore, OotEvents, Age } from 'modloader64_api/OOT/OOTAPI';
 import { InjectCore } from 'modloader64_api/CoreInjection';
 import { Z64OnlineEvents, Z64Online_EquipmentPak } from './Z64API/OotoAPI';
 import { onViUpdate } from 'modloader64_api/PluginLifecycle';
-import path from 'path';
-import { readFileSync, writeJSONSync, readJSONSync, writeFileSync } from 'fs-extra';
+import { resolve } from 'path';
+import { readFileSync, writeJSONSync, readJSONSync, existsSync } from 'fs-extra';
 import { EquipmentHelper } from './EquipmentHelper';
+
+const configFileName: string = "./mm_equipment_paks.json";
+
+interface IEquipment_Config {
+    adult_equipment: string[],
+    child_equipment: string[],
+    replace_gi_models: boolean,
+    replace_textures: boolean
+}
 
 const enum Manifest {
     KOKIRI_SWORD = "kokiri_sword.bin",
@@ -82,7 +92,7 @@ class MMEquipment implements IPlugin {
 
     shouldUpdateOnAgeChange: boolean = false;
 
-    /* prototype stuff; REMOVE ME */
+    /* track what the player currently has equipped */
     currentlyEquippedAdult: EquipmentPakExtended[] = new Array();
     currentlyEquippedChild: EquipmentPakExtended[] = new Array();
 
@@ -156,8 +166,41 @@ class MMEquipment implements IPlugin {
         // this.zobjToEquipPak("hookshot_mm.zobj", Manifest.HOOKSHOT, "Hookshot", Category.C_ITEMS, Age.ADULT);
 
         /* Experimental */
-        this.zobjToEquipPak("mm_fps_arm.zobj", Manifest.FPS_HAND_CHILD, "FPS Right Arm", Category.C_ITEMS, Age.CHILD);
+        // this.zobjToEquipPak("mm_fps_arm.zobj", Manifest.FPS_HAND_CHILD, "FPS Right Arm", Category.C_ITEMS, Age.CHILD);
+
+        if (existsSync(configFileName)) {
+            try {
+                let cfg: IEquipment_Config = readJSONSync(configFileName);
+
+                this.categoryArraysAdult.forEach((arrays: EquipmentPakExtended[], cat: Category) => {
+                    arrays.forEach((pak: EquipmentPakExtended) => {
+                        cfg.adult_equipment.forEach((name: string) => {
+                            if (name === pak.name) {
+                                this.currentlyEquippedAdult.push(pak);
+                                this.checkboxesAdult.set(pak, true);
+                            }
+                        });
+                    });
+                });
+
+                this.categoryArraysChild.forEach((arrays: EquipmentPakExtended[], cat: Category) => {
+                    arrays.forEach((pak: EquipmentPakExtended) => {
+                        cfg.child_equipment.forEach((name: string) => {
+                            if (name === pak.name) {
+                                this.currentlyEquippedChild.push(pak);
+                                this.checkboxesChild.set(pak, true);
+                            }
+                        });
+                    });
+                });
+
+                this.ModLoader.logger.info("Successfully loaded saved MM Equipment");
+            } catch (error) {
+                this.ModLoader.logger.error("Error applying saved equipment!");
+            }
+        }
     }
+
     postinit(): void {
     }
     onTick(frame?: number | undefined): void {
@@ -202,16 +245,42 @@ class MMEquipment implements IPlugin {
     onSaveLoad() {
         this.isAdult = (this.core.save.age === Age.ADULT);
         this.updateEnvColor();
+        if (this.isAdult) {
+            if (this.currentlyEquippedAdult.length !== 0) {
+                this.currentlyEquippedAdult.forEach((pak) => {
+                    this.fixPakEnvColor(pak);
+                    this.ModLoader.utils.setTimeoutFrames(() => {
+                        bus.emit(Z64OnlineEvents.LOAD_EQUIPMENT_BUFFER, pak);
+                    }, 1)
+                });
+                this.ModLoader.utils.setTimeoutFrames(() => {
+                    bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {});
+                }, 1);
+            }
+        }
+        else if (this.currentlyEquippedChild.length !== 0) {
+            this.currentlyEquippedChild.forEach((pak) => {
+                this.fixPakEnvColor(pak);
+                this.ModLoader.utils.setTimeoutFrames(() => {
+                    bus.emit(Z64OnlineEvents.LOAD_EQUIPMENT_BUFFER, pak);
+                }, 1)
+            });
+            this.ModLoader.utils.setTimeoutFrames(() => {
+                bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {});
+            }, 1);
+        }
+
+        this.shouldUpdateOnAgeChange = true;
     }
 
     @EventHandler(OotEvents.ON_AGE_CHANGE)
-    onAgeChange(age: Age) {
+    onAgeChange(age: Age): void {
         this.isAdult = (age === Age.ADULT);
 
-        if(this.shouldUpdateOnAgeChange) {
+        if (this.shouldUpdateOnAgeChange) {
             let currentEquip: EquipmentPakExtended[];
 
-            if(this.isAdult) {
+            if (this.isAdult) {
                 currentEquip = this.currentlyEquippedAdult;
             } else currentEquip = this.currentlyEquippedChild;
 
@@ -241,6 +310,31 @@ class MMEquipment implements IPlugin {
         });
     }
 
+    updateConfig(): void {
+        this.ModLoader.utils.setTimeoutFrames(() => {
+            try {
+                let cfg: IEquipment_Config = {
+                    adult_equipment: new Array(),
+                    child_equipment: new Array(),
+                    replace_gi_models: false,
+                    replace_textures: false
+                }
+
+                this.currentlyEquippedAdult.forEach((element: EquipmentPakExtended) => {
+                    cfg.adult_equipment.push(element.name);
+                });
+                this.currentlyEquippedChild.forEach((element: EquipmentPakExtended) => {
+                    cfg.child_equipment.push(element.name);
+                });
+
+                writeJSONSync(configFileName, cfg);
+            } catch (error) {
+                this.ModLoader.logger.error("Error saving MM Equipment settings!");
+                this.ModLoader.logger.error(error.message);
+            }
+        }, 1);
+    }
+
     @onViUpdate()
     onViUpdate() {
         if (this.ModLoader.ImGui.beginMainMenuBar()) {
@@ -264,7 +358,7 @@ class MMEquipment implements IPlugin {
                     this.categoryArraysAdult.forEach((paks: EquipmentPakExtended[], category: Category) => {
                         if (this.ModLoader.ImGui.treeNode(category + "###MMEquipmentCatsAdult" + category)) {
                             for (let i: number = 0; i < paks.length; i++) {
-                                if (this.ModLoader.ImGui.menuItem(paks[i].name, 
+                                if (this.ModLoader.ImGui.menuItem(paks[i].name,
                                     undefined, this.checkboxesAdult.get(paks[i]))) {
                                     if (this.isAdult) {
                                         this.fixPakEnvColor(paks[i]);
@@ -274,6 +368,7 @@ class MMEquipment implements IPlugin {
                                             bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {});
                                         }, 1)
                                         this.currentlyEquippedAdult.push(paks[i]);
+                                        this.updateConfig();
                                     }
                                 }
                             }
@@ -287,7 +382,7 @@ class MMEquipment implements IPlugin {
                     this.categoryArraysChild.forEach((paks: EquipmentPakExtended[], category: Category) => {
                         if (this.ModLoader.ImGui.treeNode(category + "###MMEquipmentCatsChild" + category)) {
                             for (let i: number = 0; i < paks.length; i++) {
-                                if (this.ModLoader.ImGui.menuItem(paks[i].name, 
+                                if (this.ModLoader.ImGui.menuItem(paks[i].name,
                                     undefined, this.checkboxesChild.get(paks[i]))) {
                                     if (!this.isAdult) {
                                         this.fixPakEnvColor(paks[i]);
@@ -297,6 +392,7 @@ class MMEquipment implements IPlugin {
                                             bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {});
                                         }, 1)
                                         this.currentlyEquippedChild.push(paks[i]);
+                                        this.updateConfig();
                                     }
                                 }
                             }
@@ -331,6 +427,7 @@ class MMEquipment implements IPlugin {
             });
             this.currentlyEquippedChild.length = 0;
         }
+        this.updateConfig();
     }
 
     zobjToEquipPak(zobj: string, manifest: string, name: string, category: Category, age: Age): void {
@@ -355,7 +452,7 @@ class MMEquipment implements IPlugin {
 }
 
 function readFileInDir(file: string): Buffer {
-    return readFileSync(path.resolve(__dirname, file));
+    return readFileSync(resolve(__dirname, file));
 }
 
 function findAllOcurrencesInBuf(substr: string, buf: Buffer): number[] {

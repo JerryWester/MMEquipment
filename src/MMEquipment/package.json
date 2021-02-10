@@ -1,11 +1,8 @@
 {
   "name": "MMEquipment",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Use Majora's Mask Equipment in Ocarina of Time!",
   "main": "MMEquipment.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [],
   "author": "Neirn",
   "credits": "",

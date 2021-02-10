@@ -91,6 +91,7 @@ class MMEquipment implements IPlugin {
     isAdult!: boolean;
 
     shouldUpdateOnAgeChange: boolean = false;
+    loadConfigOnAgeChange: boolean = false;
 
     /* track what the player currently has equipped */
     currentlyEquippedAdult: EquipmentPakExtended[] = new Array();
@@ -195,6 +196,7 @@ class MMEquipment implements IPlugin {
                 });
 
                 this.ModLoader.logger.info("Successfully loaded saved MM Equipment");
+                this.loadConfigOnAgeChange = true;
             } catch (error) {
                 this.ModLoader.logger.error("Error applying saved equipment!");
             }
@@ -233,8 +235,6 @@ class MMEquipment implements IPlugin {
             this.ModLoader.utils.setTimeoutFrames(() => {
                 bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT);
             }, 1);
-
-            this.shouldUpdateOnAgeChange = true;
         }
     }
 
@@ -290,11 +290,19 @@ class MMEquipment implements IPlugin {
                 this.fixPakEnvColor(pak);
             });
 
+            if(this.loadConfigOnAgeChange) {
+                currentEquip.forEach((pak) => {
+                    this.ModLoader.utils.setTimeoutFrames(() => {
+                        bus.emit(Z64OnlineEvents.LOAD_EQUIPMENT_BUFFER, pak);
+                    }, 1)
+                });
+                this.loadConfigOnAgeChange = false;
+            }
+
             this.ModLoader.utils.setTimeoutFrames(() => {
                 bus.emit(Z64OnlineEvents.REFRESH_EQUIPMENT, {})
             }, 1);
 
-            this.shouldUpdateOnAgeChange = false;
         }
     }
 

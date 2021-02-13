@@ -450,10 +450,14 @@ class MMEquipment implements IPlugin {
         let pak: EquipmentPakExtended = new EquipmentPakExtended(name + "###" + age.toString() + name + category, buf, indeces, category, age);
 
         if (age === Age.ADULT) {
-            this.categoryArraysAdult.get(category)?.push(pak);
+            if (this.categoryArraysAdult.get(category)) {
+                this.categoryArraysAdult.get(category).push(pak);
+            }
             this.checkboxesAdult.set(pak, false);
         } else {
-            this.categoryArraysChild.get(category)?.push(pak);
+            if (this.categoryArraysChild.get(category)) {
+                this.categoryArraysChild.get(category).push(pak);
+            }
             this.checkboxesChild.set(pak, false);
         }
     }
